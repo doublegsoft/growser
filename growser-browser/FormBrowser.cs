@@ -29,14 +29,14 @@
 */
 using CefSharp;
 using CefSharp.WinForms;
-using Growser.HTTP;
+using Growser.Browser.HTTP;
 using Growser.JS;
 using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Windows.Forms;
 
-namespace Growser
+namespace Growser.Browser
 {
   public partial class FormBrowser : Form
   {
