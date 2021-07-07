@@ -4,19 +4,13 @@ using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
-namespace Growser.Browser.JS
+namespace Growser.Common.JS
 {
   public class GrowserObject
   {
 
     private Dictionary<string, object> userdata = new Dictionary<string, object>();
-
-    public void Show(string message)
-    {
-      MessageBox.Show(message);
-    }
 
     public void SetUser(ExpandoObject user)
     {
@@ -29,7 +23,7 @@ namespace Growser.Browser.JS
 
     public void GetUser()
     {
-      MessageBox.Show((string)userdata["fullname"]);
+      // MessageBox.Show((string)userdata["fullname"]);
     }
   }
 }

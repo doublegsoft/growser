@@ -29,8 +29,9 @@
 */
 using CefSharp;
 using CefSharp.WinForms;
-using Growser.Browser.HTTP;
-using Growser.Browser.JS;
+using Growser.Common.HTTP;
+using Growser.Common.JS;
+using Growser.Live;
 using Growser.Messenger;
 using System;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ namespace Growser.Browser
 
     private static FormMessenger formMessenger = new FormMessenger();
 
-    private static FormLive formLive = new FormLive();
+    private FormLive formLive;
 
     public FormBrowser()
     {
@@ -71,13 +72,18 @@ namespace Growser.Browser
       settings.CefCommandLineArgs.Add("enable-smooth-scrolling", "1");
       settings.CefCommandLineArgs.Add("enable-overlay-scrollbar", "1");
       settings.CefCommandLineArgs.Add("high-dpi-support", "1");
-      Cef.Initialize(settings);
+      if (!Cef.IsInitialized)
+      {
+        Cef.Initialize(settings);
+      }
 
       browser = new ChromiumWebBrowser("http://localhost")
       {
         RequestHandler = new DecryptedRequestHandler()
       };
-      this.Container.ContentPanel.Controls.Add(browser);
+      this.container.ContentPanel.Controls.Add(browser);
+
+      formLive = new FormLive();
 
       browser.JavascriptObjectRepository.ResolveObject += (sender, e) => 
       {
@@ -92,6 +98,8 @@ namespace Growser.Browser
       {
         // MessageBox.Show("绑定对象");
       };
+
+      this.Text = "专科医生工作站";
     }
 
     private void toolDebug_Click(object sender, EventArgs e)
@@ -122,8 +130,7 @@ namespace Growser.Browser
 
     private void toolChat_Click(object sender, EventArgs e)
     {
-      FormMessenger form = new FormMessenger();
-      form.Show();
+      formMessenger.Show();
     }
   }
 
