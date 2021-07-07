@@ -30,7 +30,8 @@
 using CefSharp;
 using CefSharp.WinForms;
 using Growser.Browser.HTTP;
-using Growser.JS;
+using Growser.Browser.JS;
+using Growser.Messenger;
 using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
@@ -44,6 +45,10 @@ namespace Growser.Browser
     private readonly ChromiumWebBrowser browser;
 
     private static GrowserObject growserObject = new GrowserObject();
+
+    private static FormMessenger formMessenger = new FormMessenger();
+
+    private static FormLive formLive = new FormLive();
 
     public FormBrowser()
     {
@@ -113,6 +118,12 @@ namespace Growser.Browser
           e.Cancel = true;
         }
       }
+    }
+
+    private void toolChat_Click(object sender, EventArgs e)
+    {
+      FormMessenger form = new FormMessenger();
+      form.Show();
     }
   }
 
