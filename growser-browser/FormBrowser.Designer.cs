@@ -1,4 +1,4 @@
-﻿namespace Growser
+﻿namespace Growser.Browser
 {
   partial class FormBrowser
   {
@@ -100,6 +100,7 @@
       this.toolChat.Name = "toolChat";
       this.toolChat.Size = new System.Drawing.Size(26, 26);
       this.toolChat.Text = "聊天";
+      this.toolChat.Click += new System.EventHandler(this.toolChat_Click);
       // 
       // toolPreferences
       // 
