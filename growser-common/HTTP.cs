@@ -29,12 +29,12 @@
 */
 using CefSharp;
 using CefSharp.Handler;
+using Ionic.Zip;
 using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -50,6 +50,22 @@ namespace Growser.Common.HTTP
     protected override IResourceRequestHandler GetResourceRequestHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool isNavigation, bool isDownload, string requestInitiator, ref bool disableDefaultHandling)
     {
       return new DecryptedResourceRequestHandler();
+    }
+
+    protected override bool OnSelectClientCertificate(IWebBrowser chromiumWebBrowser, IBrowser browser, bool isProxy, string host, int port, X509Certificate2Collection certificates, ISelectClientCertificateCallback callback)
+    {
+      return true;
+    }
+
+    protected override bool OnCertificateError(IWebBrowser chromiumWebBrowser, IBrowser browser, CefErrorCode errorCode, string requestUrl, ISslInfo sslInfo, IRequestCallback callback)
+    {
+      Task.Run(() => {
+        if (!callback.IsDisposed)
+        {
+          callback.Continue(true);
+        }
+      });
+      return true;
     }
 
   }
@@ -75,10 +91,9 @@ namespace Growser.Common.HTTP
     /// <returns></returns>
     protected override IResourceHandler GetResourceHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request)
     {
-      
       if (request.Url.IndexOf("http://localhost") == 0)
       {
-        /// decrypted resource handler
+        /// it means loading local resources and get decrypted resource handler.
         return new DecryptedResourceHandler();
       }
       else
@@ -142,7 +157,7 @@ namespace Growser.Common.HTTP
       Uri uri = new Uri(request.Url);
       string filepath = uri.AbsolutePath;
       int index = filepath.LastIndexOf(".");
-      if (uri.Host.Equals("ashapi.kangyangwang.net")) 
+      if (!uri.Host.Equals("localhost")) 
       {
         filepath = request.Url;
       } 
@@ -159,53 +174,51 @@ namespace Growser.Common.HTTP
       {
         using (callback)
         {
+          ZipFile wwwapp = ZipFile.Read("www.app");
+          wwwapp.ParallelDeflateThreshold = -1;
+
           Stream stream = null;
-          //if (filepath.IndexOf("https://") == 0)
-          //{
-          //  try
-          //  {
-          //    HttpContent httpContent;
-          //    if (request.PostData != null)
-          //    {
-          //      httpContent = new StringContent(request.PostData.Elements[0].GetBody(), Encoding.UTF8);
-          //    }
-          //    else
-          //    {
-          //      httpContent = new StringContent("{}", Encoding.UTF8);
-          //    }
-          //    httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-          //    httpContent.Headers.Add("apptoken", "1234567");
-          //    System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
-          //    HttpResponseMessage response = client.PostAsync(filepath, httpContent).Result;
-          //    response.EnsureSuccessStatusCode();
-          //    stream = response.Content.ReadAsStreamAsync().Result;
-          //  }
-          //  catch (Exception e)
-          //  {
-          //    stream = new MemoryStream();
-          //    StreamWriter writer = new StreamWriter(stream);
-          //    writer.Write("{\"error\":{\"code\":-1,\"message\":\"网络请求异常！\"}}");
-          //    writer.Flush();
-          //  }
-          //}
-          //else 
           if (string.Equals(filepath, "/", StringComparison.OrdinalIgnoreCase))
           {
-            FileStream fs = File.Open("www/index.html", FileMode.Open);
-            stream = fs;
+            filepath = "index.html";
           }
-          else
+          //
+          // remove leading slash
+          //
+          if (filepath.IndexOf("/") == 0)
           {
-            try
+            filepath = filepath.Substring(1);
+          }
+          try
+          {
+            if (filepath.EndsWith(".css") || filepath.EndsWith(".html") || filepath.EndsWith(".js"))
             {
-              FileStream fs = File.Open("www/" + filepath, FileMode.Open);
-              stream = fs;
-            } catch (Exception ex)
+              if (wwwapp[filepath] != null)
+              {
+                MemoryStream entryStream = new MemoryStream();
+                wwwapp[filepath].Extract(entryStream);
+                entryStream.Seek(0, SeekOrigin.Begin);
+
+                string plaintext = RSA.DecryptText(Convert.FromBase64String(new StreamReader(entryStream).ReadToEnd()));
+                entryStream.Close();
+                stream = new MemoryStream(Encoding.UTF8.GetBytes(plaintext));
+              }
+            }
+            else
             {
-              Console.WriteLine(filepath);
+              if (wwwapp[filepath] != null)
+              {
+                MemoryStream entryStream = new MemoryStream();
+                wwwapp[filepath].Extract(entryStream);
+                entryStream.Seek(0, SeekOrigin.Begin);
+                stream = entryStream;
+              }
             }
           }
-
+          catch (Exception ex)
+          {
+            Console.WriteLine(ex.StackTrace);
+          }
           if (stream == null)
           {
             callback.Cancel();
@@ -222,7 +235,6 @@ namespace Growser.Common.HTTP
           }
         }
       });
-
       return CefReturnValue.ContinueAsync;
     }
 

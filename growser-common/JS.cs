@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Configuration;
 using System.Dynamic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Growser.Common.JS
 {
@@ -24,6 +22,18 @@ namespace Growser.Common.JS
     public void GetUser()
     {
       // MessageBox.Show((string)userdata["fullname"]);
+    }
+
+    public string GetHost()
+    {
+      NameValueCollection appSettings = ConfigurationManager.AppSettings;
+      return appSettings["host"];
+    }
+
+    public string GetAppCode()
+    {
+      NameValueCollection appSettings = ConfigurationManager.AppSettings;
+      return appSettings["code"];
     }
   }
 }
