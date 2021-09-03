@@ -29,14 +29,21 @@
 */
 using CefSharp;
 using CefSharp.WinForms;
+using CefSharp.SchemeHandler;
+
 using Growser.Common.HTTP;
 using Growser.Common.JS;
 using Growser.Live;
 using Growser.Messenger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Windows.Forms;
+using System.Security.Cryptography.X509Certificates;
+using Growser.Update;
+using System.Reflection;
+using Oracle.ManagedDataAccess.Client;
 
 namespace Growser.Browser
 {
@@ -47,41 +54,55 @@ namespace Growser.Browser
 
     private static GrowserObject growserObject = new GrowserObject();
 
-    private static FormMessenger formMessenger = new FormMessenger();
+    private static FormMessenger formMessenger; // = new FormMessenger();
+
+    private static FormLoading formLoading = new FormLoading();
 
     private FormLive formLive;
 
     public FormBrowser()
     {
-
-      NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-      foreach (NetworkInterface ni in interfaces)
-      {
-        Console.WriteLine(ni.NetworkInterfaceType);
-        Console.WriteLine(BitConverter.ToString(ni.GetPhysicalAddress().GetAddressBytes()));
-      }
-
-      InitializeComponent();
-
+      // 初始化CEF环境
       CefSharpSettings.ConcurrentTaskExecution = true;
       CefSharpSettings.FocusedNodeChangedEnabled = true;
 
       CefSettings settings = new CefSettings();
-      // settings.CachePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/GPMDP";
+      settings.CachePath = AppDomain.CurrentDomain.BaseDirectory + "/.cache";
       settings.WindowlessRenderingEnabled = true;
       settings.CefCommandLineArgs.Add("enable-smooth-scrolling", "1");
       settings.CefCommandLineArgs.Add("enable-overlay-scrollbar", "1");
       settings.CefCommandLineArgs.Add("high-dpi-support", "1");
-      if (!Cef.IsInitialized)
-      {
-        Cef.Initialize(settings);
-      }
+      settings.CefCommandLineArgs.Add("ignore-certificate-errors", "1");
+      settings.CefCommandLineArgs.Add("ignore-urlfetcher-cert-requests", "1");
+      // settings.CefCommandLineArgs.Add("disable-web-security", "1");
+      settings.CefCommandLineArgs.Add("disable-oor-cors", "1");
+      settings.CefCommandLineArgs["disable-features"] = "OutOfBlinkCors";
+
+      Cef.Initialize(settings, performDependencyCheck: false, browserProcessHandler: null);
+
+      InitializeComponent();
 
       browser = new ChromiumWebBrowser("http://localhost")
       {
         RequestHandler = new DecryptedRequestHandler()
       };
+      browser.BrowserSettings.UniversalAccessFromFileUrls = CefState.Enabled;
+      browser.BrowserSettings.TextAreaResize = CefState.Disabled;
       this.container.ContentPanel.Controls.Add(browser);
+
+      Stopwatch stopwatch = new Stopwatch();
+      stopwatch.Start();
+      browser.LoadingStateChanged += (sender, args) =>
+      {
+        if (args.IsLoading == false)
+        {
+          stopwatch.Stop();
+          Invoke((MethodInvoker)delegate
+          {
+            formLoading.Close();
+          });
+        }
+      };
 
       formLive = new FormLive();
 
@@ -99,7 +120,14 @@ namespace Growser.Browser
         // MessageBox.Show("绑定对象");
       };
 
-      this.Text = "专科医生工作站";
+      this.Text = "重庆妇幼专科联盟医生工作站";
+
+      string host = growserObject.GetHost();
+      if (host == null || host.Length == 0)
+      {
+        FormSettings formSettings = new FormSettings();
+        DialogResult result = formSettings.ShowDialog();
+      }
     }
 
     private void toolDebug_Click(object sender, EventArgs e)
@@ -125,12 +153,80 @@ namespace Growser.Browser
         {
           e.Cancel = true;
         }
+        else
+        {
+          Application.Exit();
+        }
       }
     }
 
     private void toolChat_Click(object sender, EventArgs e)
     {
       formMessenger.Show();
+    }
+
+    private void FormBrowser_Load(object sender, EventArgs e)
+    {
+      formLoading.ShowDialog();
+    }
+
+    private void toolPreferences_Click(object sender, EventArgs e)
+    {
+      FormSettings formSettings = new FormSettings();
+      formSettings.ShowDialog();
+    }
+
+    private void toolHome_Click(object sender, EventArgs e)
+    {
+      browser.Reload();
+      if (formLoading.IsDisposed)
+      {
+        formLoading = new FormLoading();
+      }
+      formLoading.ShowDialog();
+    }
+
+    private void toolRemote_Click(object sender, EventArgs e)
+    {
+      Process.Start(AppDomain.CurrentDomain.BaseDirectory + "/SunloginClient/SunloginClient.exe");
+    }
+
+    private void toolVersion_Click(object sender, EventArgs e)
+    {
+
+      Process.Start("https://www.cq-fyy.com");
+    }
+
+    private async void FormBrowser_Shown(object sender, EventArgs e)
+    {
+      string localVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+      string remoteVersion = await AutoUpdate.CheckExeVersion();
+      if (!localVersion.Equals(remoteVersion))
+      {
+        toolVersion.Enabled = true;
+        toolVersion.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
+      }
+    }
+
+    private void toolPatient_Click(object sender, EventArgs e)
+    {
+      string connstr = @"
+        Data Source = (
+          DESCRIPTION = (
+            ADDRESS = (PROTOCOL = TCP)
+                      (HOST = 0.0.0.0)
+                      (PORT = 1521)
+          )(
+            CONNECT_DATA = (SERVER = DEDICATED)
+                           (SERVICE_NAME = XE)
+          )
+        );User Id = username;Password=password;
+      ";
+      OracleConnection conn = new OracleConnection(connstr);
+      conn.Open();
+      MessageBox.Show("Oracle Version: " + conn.ServerVersion);
+      conn.Close();
+      conn.Dispose();
     }
   }
 

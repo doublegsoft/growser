@@ -28,7 +28,13 @@
 ** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 using System;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using CefSharp;
+using CefSharp.WinForms;
+using Growser.Update;
 
 namespace Growser.Browser
 {
@@ -38,10 +44,34 @@ namespace Growser.Browser
     /// The main entry point for the application.
     /// </summary>
     [STAThread]
-    static void Main()
+    static async Task Main(string[] args)
     {
       Application.EnableVisualStyles();
       Application.SetCompatibleTextRenderingDefault(false);
+
+      // 检查更新
+      string remoteVersion = await AutoUpdate.CheckAppVersion();
+      if (remoteVersion.Equals("-1"))
+      {
+        MessageBox.Show("无法连接到更新服务器，请检查网络设置！");
+        return;
+      }
+      remoteVersion = remoteVersion.Replace("\n", "");
+      string localVersion = AutoUpdate.Checksum("./www.app");
+
+      if (!remoteVersion.Equals(localVersion))
+      {
+        Application.Run(new FormDownloading(remoteVersion));
+        return;
+      }
+
+      if (Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "/his"))
+      {
+        HISInterfaceProvider.Reload();
+      }
+
+      Console.WriteLine(HISInterfaceProvider.Host.GetHospitalId());
+
       Application.Run(new FormBrowser());
     }
   }
