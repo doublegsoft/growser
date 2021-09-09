@@ -33,16 +33,22 @@ namespace Growser.HIS
     List<Patient> GetWaitingPatients(string clinicId);
 
     /// <summary>
-    /// 获取检查报告列表。
+    /// 获取医院检查报告列表。
     /// </summary>
     /// <returns>检查报告列表</returns>
     List<MedicalTestReport> GetTestReports();
 
     /// <summary>
-    /// 获取检验报告列表。
+    /// 获取医院检验报告列表。
     /// </summary>
     /// <returns>检验报告列表</returns>
-    List<MedicalLaboratoryReport> GetLaboratoryReports(string patientId, string outpatientNumber);
+    List<MedicalLaboratoryReport> GetLaboratoryReports();
+
+    /// <summary>
+    /// 获取医院药品列表。
+    /// </summary>
+    /// <returns>药品列表</returns>
+    List<Medicine> GetMedicines();
 
     /// <summary>
     /// 计算检查/检验单价格。
