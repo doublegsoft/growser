@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SDK
+namespace Growser.HIS
 {
 
   public class OutpatientDiagnosis

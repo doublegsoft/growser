@@ -25,6 +25,14 @@ namespace Growser.HIS
     string GetHospitalId();
 
     /// <summary>
+    /// 获取排队等候用户列表。
+    /// </summary>
+    /// <param name="hospitalId">医院标识</param>
+    /// <param name="clinicId">门诊科室标识</param>
+    /// <returns>等候用户</returns>
+    List<Patient> GetWaitingPatients(string clinicId);
+
+    /// <summary>
     /// 获取检查报告列表。
     /// </summary>
     /// <returns>检查报告列表</returns>
@@ -34,7 +42,7 @@ namespace Growser.HIS
     /// 获取检验报告列表。
     /// </summary>
     /// <returns>检验报告列表</returns>
-    List<MedicalLaboratoryReport> GetLaboratoryReports();
+    List<MedicalLaboratoryReport> GetLaboratoryReports(string patientId, string outpatientNumber);
 
     /// <summary>
     /// 计算检查/检验单价格。
@@ -54,21 +62,33 @@ namespace Growser.HIS
     /// <summary>
     /// 开具检查单。
     /// </summary>
+    /// <param name="patientId">患者标识</param>
+    /// <param name="outpatientNumber">门诊号</param>
+    /// <param name="clinicId">开单科室标识</param>
+    /// <param name="attendingDoctorId">主诊医生标识</param>
     /// <param name="tests">检查单</param>
-    void CreateTestReports(List<MedicalTestReport> tests);
+    void CreateTestReports(string patientId, string outpatientNumber, string clinicId, string attendingDoctorId, List<MedicalTestReport> tests);
 
     /// <summary>
     /// 开具检验单。
     /// </summary>
+    /// <param name="patientId">患者标识</param>
+    /// <param name="outpatientNumber">门诊号</param>
+    /// <param name="clinicId">开单科室标识</param>
+    /// <param name="attendingDoctorId">主诊医生标识</param>
     /// <param name="laboratoryTests">检验单</param>
-    void CreateLaboratoryReports(List<MedicalLaboratoryReport> laboratoryTests);
+    void CreateLaboratoryReports(string patientId, string outpatientNumber, string clinicId, string attendingDoctorId, List<MedicalLaboratoryReport> laboratoryTests);
 
     /// <summary>
     /// 开具处方。
     /// </summary>
+    /// <param name="patientId">患者标识</param>
+    /// <param name="outpatientNumber">门诊号</param>
+    /// <param name="clinicId">开单科室标识</param>
+    /// <param name="attendingDoctorId">主诊医生标识</param>
     /// <param name="prescription">处方对象</param>
     /// <returns>处方标识</returns>
-    void CreatePrescription(Prescription prescription);
+    void CreatePrescription(string patientId, string outpatientNumber, string clinicId, string attendingDoctorId, Prescription prescription);
   }
 
   public class HISSpecificationHost
